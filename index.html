@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>D1 Pitcher Development Tracker</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --ink:#172033; --muted:#65748b;
+    --blue:#1f5eff; --soft:#eaf0ff; --green:#0f9f6e; --red:#d64545;
+    --gold:#f3a712; --line:#dce3ef;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#143c8c,#1f5eff);color:white;padding:18px 16px 14px;border-bottom-left-radius:22px;border-bottom-right-radius:22px;box-shadow:0 5px 18px rgba(0,0,0,.18)}
+  h1{font-size:22px;margin:0 0 4px;font-weight:800}
+  header p{margin:0;font-size:13px;opacity:.92}
+  main{padding:14px 12px 90px;max-width:760px;margin:0 auto}
+  .tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+  .tab{border:0;background:#fff;color:var(--muted);padding:8px 3px;font-size:11px;font-weight:700}
+  .tab.active{color:var(--blue);background:var(--soft)}
+  .view{display:none}.view.active{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 2px 8px rgba(20,40,80,.06)}
+  .card h2{font-size:18px;margin:0 0 8px}
+  .card h3{font-size:15px;margin:12px 0 6px}
+  .small{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;padding:5px 9px;border-radius:999px;background:var(--soft);color:#173d91;font-size:12px;font-weight:800;margin:2px 4px 2px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn{border:0;border-radius:12px;background:var(--blue);color:white;padding:10px 12px;font-weight:800;font-size:14px}
+  .btn.secondary{background:#eef2f8;color:#1c2a3d;border:1px solid var(--line)}
+  .btn.danger{background:var(--red)}
+  .btn.green{background:var(--green)}
+  input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:15px;background:#fff;color:var(--ink)}
+  textarea{min-height:80px}
+  label{display:block;font-size:12px;font-weight:800;color:#42516a;margin:8px 0 4px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{border-bottom:1px solid var(--line);padding:7px;text-align:left;vertical-align:top}
+  th{color:#33425b;background:#f1f5fb}
+  .exercise{cursor:pointer}
+  .exercise-title{display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .badge{font-size:11px;background:#f4f7fb;border:1px solid var(--line);padding:4px 8px;border-radius:999px;color:#526276}
+  .details{display:none;margin-top:8px}
+  .details.open{display:block}
+  ul{margin:8px 0 0 18px;padding:0}
+  li{margin:5px 0}
+  .warn{border-left:5px solid var(--gold);background:#fff8e8}
+  .good{border-left:5px solid var(--green)}
+  .bad{border-left:5px solid var(--red)}
+  .progressbar{height:10px;background:#e7edf6;border-radius:999px;overflow:hidden}
+  .progressbar span{display:block;height:100%;background:var(--blue);width:0%}
+  .checkrow{display:flex;align-items:center;gap:8px;margin:8px 0}
+  .checkrow input{width:auto}
+  .svgwrap{background:#f8fbff;border:1px dashed #c7d4e6;border-radius:14px;padding:8px;margin:8px 0;text-align:center}
+  svg{max-width:100%;height:120px}
+</style>
+</head>
+<body>
+<header>
+  <h1>D1 Pitcher Development</h1>
+  <p>Class of 2032 • Arizona Rising • Pitcher Tracker</p>
+</header>
+
+<main>
+  <section id="dashboard" class="view active">
+    <div class="card">
+      <h2>Today</h2>
+      <div id="todayPlan"></div>
+      <div class="grid2" style="margin-top:10px">
+        <button class="btn green" onclick="markWorkout()">Mark Workout Done</button>
+        <button class="btn secondary" onclick="showView('logs')">Log Metrics</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Current Profile</h2>
+      <span class="pill">5'9.5"</span><span class="pill">150 lbs</span><span class="pill">47–49 mph</span><span class="pill">FB / Drop / Change / Curve</span>
+      <p class="small">Goal: compete at elite travel-ball level now, become top area high school pitcher, and build toward D1 opportunities.</p>
+    </div>
+    <div class="card warn">
+      <h2>Non-Negotiables</h2>
+      <ul>
+        <li>No sharp pain training or pitching.</li>
+        <li>Technique before weight.</li>
+        <li>Track soreness, sleep, and energy.</li>
+        <li>Velocity matters, but command and health matter more.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Progress Snapshot</h2>
+      <p class="small">Workout completion this week</p>
+      <div class="progressbar"><span id="weekBar"></span></div>
+      <p id="weekText" class="small"></p>
+    </div>
+  </section>
+
+  <section id="schedule" class="view">
+    <div class="card"><h2>Weekly Schedule</h2><div id="scheduleList"></div></div>
+    <div class="card">
+      <h2>Offseason Adjustment</h2>
+      <p>After next week’s tournament, shift from game-readiness to building strength, speed, mobility, and pitcher durability.</p>
+      <ul>
+        <li><b>Offseason:</b> 3 strength/power days + 1 bullpen + 1 recovery day.</li>
+        <li><b>In-season:</b> reduce lifting volume and prioritize recovery.</li>
+        <li><b>Tournament week:</b> no heavy legs within 24–48 hours of pitching.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="library" class="view">
+    <div class="card">
+      <h2>Exercise & Stretch Library</h2>
+      <input id="search" placeholder="Search exercise, stretch, arm care..." oninput="renderExercises()" />
+      <div id="exerciseList"></div>
+    </div>
+  </section>
+
+  <section id="logs" class="view">
+    <div class="card">
+      <h2>Log Metrics</h2>
+      <label>Date</label><input id="logDate" type="date" />
+      <label>Velocity</label><input id="velocity" placeholder="Example: 49 mph" />
+      <label>Strike %</label><input id="strike" placeholder="Example: 64%" />
+      <label>First-Pitch Strike %</label><input id="fps" placeholder="Example: 58%" />
+      <label>Soreness 0–10</label><input id="soreness" type="number" min="0" max="10" />
+      <label>Sleep Hours</label><input id="sleep" type="number" step="0.25" />
+      <label>Notes</label><textarea id="notes" placeholder="Command, energy, mechanics, recovery..."></textarea>
+      <button class="btn" onclick="saveLog()">Save Log</button>
+    </div>
+    <div class="card"><h2>Saved Logs</h2><div id="logList"></div></div>
+  </section>
+
+  <section id="recruiting" class="view">
+    <div class="card">
+      <h2>2032 Recruiting Roadmap</h2>
+      <table>
+        <tr><th>Stage</th><th>Focus</th></tr>
+        <tr><td>12–13</td><td>Develop athlete, command, strength base. Track data. Save clips.</td></tr>
+        <tr><td>13–14</td><td>Build profile, compete regionally, improve measurable tools.</td></tr>
+        <tr><td>14–15</td><td>Prepare stronger skills video, target better events.</td></tr>
+        <tr><td>15–17</td><td>Coach communication, camps, showcases, fit evaluation.</td></tr>
+        <tr><td>17–18</td><td>Compare offers, role, academics, culture, development plan.</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h2>College Target List</h2>
+      <label>School</label><input id="school" placeholder="Example: Arizona, Oklahoma, Florida..." />
+      <label>Notes</label><textarea id="schoolNotes" placeholder="Academics, roster, camp, coach, interest level..."></textarea>
+      <button class="btn" onclick="saveSchool()">Add School</button>
+      <div id="schoolList"></div>
+    </div>
+    <div class="card warn">
+      <h2>Recruiting Rule Reminder</h2>
+      <p>NCAA rules change. Verify contact dates and recruiting calendar every year before contacting coaches or attending events for recruiting purposes.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button class="tab active" onclick="showView('dashboard')">Home</button>
+  <button class="tab" onclick="showView('schedule')">Schedule</button>
+  <button class="tab" onclick="showView('library')">Library</button>
+  <button class="tab" onclick="showView('logs')">Logs</button>
+  <button class="tab" onclick="showView('recruiting')">Recruit</button>
+</nav>
+
+<script>
+const schedule = {
+  "Monday": ["Lower Body Strength + Core", "Goblet squat, split squat, RDL, glute bridge, plank.", "Post: hamstring, quad, hip flexor, butterfly, child's pose."],
+  "Tuesday": ["Team Practice / Speed Light", "Practice day. If no practice: short sprint mechanics and agility.", "Post: hips, calves, thoracic rotations."],
+  "Wednesday": ["Bullpen + Arm Care", "Command bullpen, pitch focus, band circuit.", "Post: cross-body shoulder, open books, hip mobility."],
+  "Thursday": ["Team Practice / Power Light", "Practice day. Avoid heavy legs.", "Post: full-body stretch 8–10 minutes."],
+  "Friday": ["Full Body Strength", "Step-ups, dumbbell deadlift, DB press, rows, carries.", "Post: hips, lats, shoulders."],
+  "Saturday": ["Games or Active Recovery", "If games: compete and recover. If off: walk/bike/light mobility.", "Hydrate and stretch after play."],
+  "Sunday": ["Recovery Reset", "No formal training unless mobility only.", "Sleep, meal prep, weekly review."]
+};
+
+const exercises = [
+ {name:"Goblet Squat",cat:"Strength",svg:"squat",why:"Builds leg strength, posture, and force production.",keys:["Chest tall","Knees track over toes","Control down, drive up"],avoid:["Knees collapsing inward","Rounding back","Too much weight too soon"],rx:"3 x 8"},
+ {name:"Bulgarian Split Squat",cat:"Strength",svg:"lunge",why:"Builds single-leg drive and stability for pitching.",keys:["Front heel heavy","Tall torso","Slow lower"],avoid:["Pushing off rear leg","Front knee cave","Rushing reps"],rx:"3 x 8 each leg"},
+ {name:"Romanian Deadlift",cat:"Strength",svg:"hinge",why:"Builds hamstrings and glutes for hip drive.",keys:["Hinge at hips","Flat back","Feel hamstrings"],avoid:["Rounding back","Squatting the movement","Jerking weight"],rx:"3 x 8"},
+ {name:"Glute Bridge",cat:"Strength",svg:"bridge",why:"Improves glute strength and protects low back.",keys:["Drive through heels","Squeeze glutes","Pause at top"],avoid:["Overarching low back","Knees caving"],rx:"3 x 12"},
+ {name:"Plank",cat:"Core",svg:"plank",why:"Builds trunk stiffness for force transfer.",keys:["Straight line","Ribs down","Breathe"],avoid:["Sagging hips","Holding breath"],rx:"3 x 30–60 sec"},
+ {name:"Box Jump",cat:"Power",svg:"jump",why:"Develops explosive lower-body power.",keys:["Low box first","Land softly","Step down"],avoid:["High box ego jumps","Knees collapsing","Jumping down"],rx:"3 x 5"},
+ {name:"Broad Jump",cat:"Power",svg:"jump",why:"Builds horizontal force for pitching drive.",keys:["Explode forward","Stick landing","Knees aligned"],avoid:["Falling forward","Loud landings"],rx:"3 x 5"},
+ {name:"Skater Bounds",cat:"Power",svg:"skater",why:"Builds lateral power and balance.",keys:["Stick each landing","Athletic posture"],avoid:["Rushing","Wobbly knee cave"],rx:"3 x 6 each side"},
+ {name:"Med Ball Rotational Throw",cat:"Power",svg:"rotation",why:"Transfers hip/core power into throwing pattern.",keys:["Hips first","Fast rotation","Finish balanced"],avoid:["Arms-only throw","Over-rotating back"],rx:"3 x 6 each side"},
+ {name:"Step-Up",cat:"Strength",svg:"step",why:"Builds lead-leg drive and stability.",keys:["Full foot on box","Drive through lead leg"],avoid:["Pushing off back leg","Box too high"],rx:"3 x 8 each leg"},
+ {name:"One-Arm Row",cat:"Arm Care",svg:"row",why:"Strengthens upper back and shoulder support.",keys:["Pull elbow toward hip","Squeeze shoulder blade"],avoid:["Shrugging","Twisting body"],rx:"3 x 8 each side"},
+ {name:"Band Pull-Apart",cat:"Arm Care",svg:"band",why:"Improves posterior shoulder endurance.",keys:["Straight arms","Squeeze shoulder blades"],avoid:["Shrugging","Snapping band back"],rx:"2 x 15–20"},
+ {name:"External Rotation",cat:"Arm Care",svg:"band",why:"Supports rotator cuff endurance.",keys:["Elbow pinned","Slow control"],avoid:["Twisting torso","Too heavy band"],rx:"2 x 15"},
+ {name:"Hip Flexor / Couch Stretch",cat:"Stretch",svg:"stretch",why:"Maintains hip extension for stride and drive.",keys:["Squeeze rear glute","Pelvis tucked"],avoid:["Arching low back","Forcing knee pain"],rx:"1 min each side"},
+ {name:"Pigeon / Figure-4 Stretch",cat:"Stretch",svg:"stretch",why:"Improves glute and hip mobility.",keys:["Gentle stretch","Breathe"],avoid:["Sharp knee pain","Twisting aggressively"],rx:"1 min each side"},
+ {name:"Hamstring Stretch",cat:"Stretch",svg:"stretch",why:"Maintains posterior chain mobility.",keys:["Gentle tension","Neutral back"],avoid:["Bouncing","Forcing pain"],rx:"45–60 sec each side"},
+ {name:"Thoracic Open Book",cat:"Stretch",svg:"openbook",why:"Improves upper-back rotation.",keys:["Knees stacked","Rotate through upper back"],avoid:["Forcing shoulder down","Painful low-back twist"],rx:"10 reps each side"},
+ {name:"Cross-Body Shoulder Stretch",cat:"Stretch",svg:"shoulder",why:"Helps posterior shoulder recovery after throwing.",keys:["Gentle pull","Shoulder relaxed"],avoid:["Pinching pain","Aggressive pressure"],rx:"30–45 sec each side"}
+];
+
+function icon(type){
+  const base = '<svg viewBox="0 0 220 130" aria-hidden="true"><line x1="15" y1="115" x2="205" y2="115" stroke="#9aa8ba" stroke-width="2"/>';
+  if(type==="squat") return base+'<circle cx="110" cy="25" r="9" fill="none" stroke="#172033" stroke-width="3"/><line x1="110" y1="34" x2="110" y2="65" stroke="#172033" stroke-width="3"/><line x1="110" y1="48" x2="78" y2="62" stroke="#172033" stroke-width="3"/><line x1="110" y1="48" x2="142" y2="62" stroke="#172033" stroke-width="3"/><line x1="110" y1="65" x2="80" y2="88" stroke="#172033" stroke-width="3"/><line x1="80" y1="88" x2="60" y2="115" stroke="#172033" stroke-width="3"/><line x1="110" y1="65" x2="140" y2="88" stroke="#172033" stroke-width="3"/><line x1="140" y1="88" x2="160" y2="115" stroke="#172033" stroke-width="3"/><circle cx="110" cy="51" r="12" fill="#eaf0ff" stroke="#1f5eff" stroke-width="2"/></svg>';
+  if(type==="hinge") return base+'<circle cx="145" cy="30" r="9" fill="none" stroke="#172033" stroke-width="3"/><line x1="138" y1="38" x2="92" y2="68" stroke="#172033" stroke-width="3"/><line x1="112" y1="55" x2="70" y2="58" stroke="#172033" stroke-width="3"/><line x1="112" y1="55" x2="145" y2="75" stroke="#172033" stroke-width="3"/><line x1="92" y1="68" x2="72" y2="115" stroke="#172033" stroke-width="3"/><line x1="92" y1="68" x2="145" y2="115" stroke="#172033" stroke-width="3"/></svg>';
+  if(type==="plank") return base+'<circle cx="50" cy="78" r="8" fill="none" stroke="#172033" stroke-width="3"/><line x1="58" y1="80" x2="150" y2="72" stroke="#172033" stroke-width="4"/><line x1="78" y1="78" x2="68" y2="115" stroke="#172033" stroke-width="3"/><line x1="150" y1="72" x2="190" y2="115" stroke="#172033" stroke-width="3"/></svg>';
+  if(type==="band") return base+'<circle cx="110" cy="25" r="9" fill="none" stroke="#172033" stroke-width="3"/><line x1="110" y1="34" x2="110" y2="75" stroke="#172033" stroke-width="3"/><line x1="110" y1="50" x2="55" y2="52" stroke="#172033" stroke-width="3"/><line x1="110" y1="50" x2="165" y2="52" stroke="#172033" stroke-width="3"/><line x1="55" y1="52" x2="165" y2="52" stroke="#f3a712" stroke-width="5"/><line x1="110" y1="75" x2="85" y2="115" stroke="#172033" stroke-width="3"/><line x1="110" y1="75" x2="135" y2="115" stroke="#172033" stroke-width="3"/></svg>';
+  if(type==="rotation") return base+'<circle cx="110" cy="25" r="9" fill="none" stroke="#172033" stroke-width="3"/><line x1="110" y1="34" x2="110" y2="75" stroke="#172033" stroke-width="3"/><line x1="110" y1="50" x2="65" y2="48" stroke="#172033" stroke-width="3"/><line x1="110" y1="50" x2="160" y2="40" stroke="#172033" stroke-width="3"/><circle cx="170" cy="38" r="9" fill="#eaf0ff" stroke="#1f5eff" stroke-width="2"/><path d="M70 78 C105 58,135 60,165 76" fill="none" stroke="#f3a712" stroke-width="3"/><line x1="110" y1="75" x2="82" y2="115" stroke="#172033" stroke-width="3"/><line x1="110" y1="75" x2="140" y2="115" stroke="#172033" stroke-width="3"/></svg>';
+  if(type==="jump"||type==="skater"||type==="step") return base+'<circle cx="90" cy="25" r="9" fill="none" stroke="#172033" stroke-width="3"/><line x1="90" y1="34" x2="95" y2="68" stroke="#172033" stroke-width="3"/><line x1="92" y1="48" x2="60" y2="30" stroke="#172033" stroke-width="3"/><line x1="92" y1="48" x2="125" y2="32" stroke="#172033" stroke-width="3"/><line x1="95" y1="68" x2="70" y2="100" stroke="#172033" stroke-width="3"/><line x1="95" y1="68" x2="130" y2="100" stroke="#172033" stroke-width="3"/><rect x="145" y="85" width="45" height="30" fill="#eaf0ff" stroke="#1f5eff" stroke-width="2"/></svg>';
+  return base+'<circle cx="90" cy="35" r="9" fill="none" stroke="#172033" stroke-width="3"/><line x1="90" y1="44" x2="112" y2="75" stroke="#172033" stroke-width="3"/><line x1="112" y1="75" x2="70" y2="115" stroke="#172033" stroke-width="3"/><line x1="112" y1="75" x2="160" y2="115" stroke="#172033" stroke-width="3"/><line x1="100" y1="58" x2="62" y2="80" stroke="#172033" stroke-width="3"/><line x1="100" y1="58" x2="140" y2="82" stroke="#172033" stroke-width="3"/></svg>';
+}
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  [...document.querySelectorAll('.tab')].find(b=>b.textContent.toLowerCase().startsWith(id[0]) || (id==="dashboard" && b.textContent==="Home"))?.classList.add('active');
+  if(id==="library") renderExercises();
+  if(id==="logs") renderLogs();
+  if(id==="recruiting") renderSchools();
+}
+
+function initDate(){
+  const d = new Date();
+  document.getElementById('logDate').value = d.toISOString().slice(0,10);
+}
+function getDayName(){return new Date().toLocaleDateString('en-US',{weekday:'long'});}
+function renderToday(){
+  const day = getDayName(), s = schedule[day];
+  document.getElementById('todayPlan').innerHTML = `<span class="pill">${day}</span><h3>${s[0]}</h3><p>${s[1]}</p><p class="small"><b>Stretch:</b> ${s[2]}</p>`;
+}
+function renderSchedule(){
+  const root = document.getElementById('scheduleList'); root.innerHTML = '';
+  Object.entries(schedule).forEach(([day,s])=>{
+    root.innerHTML += `<div class="card"><span class="pill">${day}</span><h3>${s[0]}</h3><p>${s[1]}</p><p class="small"><b>Post:</b> ${s[2]}</p></div>`;
+  });
+}
+function renderExercises(){
+  const q = (document.getElementById('search')?.value || '').toLowerCase();
+  const root = document.getElementById('exerciseList'); root.innerHTML = '';
+  exercises.filter(e => (e.name+e.cat+e.why).toLowerCase().includes(q)).forEach((e,i)=>{
+    root.innerHTML += `<div class="card exercise" onclick="toggleDetails(${i})">
+      <div class="exercise-title"><h3>${e.name}</h3><span class="badge">${e.cat}</span></div>
+      <div class="svgwrap">${icon(e.svg)}</div>
+      <p class="small">${e.why}</p>
+      <div id="detail${i}" class="details">
+        <p><b>Prescription:</b> ${e.rx}</p>
+        <p><b>Key points:</b></p><ul>${e.keys.map(x=>`<li>${x}</li>`).join('')}</ul>
+        <p><b>Avoid:</b></p><ul>${e.avoid.map(x=>`<li>${x}</li>`).join('')}</ul>
+      </div>
+    </div>`;
+  });
+}
+function toggleDetails(i){document.getElementById('detail'+i).classList.toggle('open');}
+
+function storage(k,v){ if(v===undefined) return JSON.parse(localStorage.getItem(k)||'[]'); localStorage.setItem(k,JSON.stringify(v)); }
+function saveLog(){
+  const logs = storage('pitcherLogs');
+  logs.unshift({
+    date:logDate.value, velocity:velocity.value, strike:strike.value, fps:fps.value,
+    soreness:soreness.value, sleep:sleep.value, notes:notes.value
+  });
+  storage('pitcherLogs',logs);
+  velocity.value=strike.value=fps.value=soreness.value=sleep.value=notes.value='';
+  renderLogs();
+}
+function renderLogs(){
+  const logs = storage('pitcherLogs');
+  document.getElementById('logList').innerHTML = logs.length ? logs.map((l,idx)=>`
+    <div class="card ${Number(l.soreness)>=6?'bad':''}">
+      <b>${l.date}</b><br>
+      <span class="pill">Velo: ${l.velocity||'-'}</span><span class="pill">Strike: ${l.strike||'-'}</span><span class="pill">FPS: ${l.fps||'-'}</span>
+      <p class="small">Soreness: ${l.soreness||'-'} / Sleep: ${l.sleep||'-'} hrs</p>
+      <p>${l.notes||''}</p>
+      <button class="btn danger" onclick="deleteLog(${idx})">Delete</button>
+    </div>`).join('') : '<p class="small">No logs yet.</p>';
+}
+function deleteLog(i){ const logs=storage('pitcherLogs'); logs.splice(i,1); storage('pitcherLogs',logs); renderLogs(); }
+
+function saveSchool(){
+  const list=storage('schools');
+  list.unshift({school:school.value, notes:schoolNotes.value});
+  storage('schools',list); school.value=schoolNotes.value=''; renderSchools();
+}
+function renderSchools(){
+  const list=storage('schools');
+  document.getElementById('schoolList').innerHTML = list.length ? list.map((s,i)=>`
+    <div class="card"><b>${s.school}</b><p>${s.notes}</p><button class="btn danger" onclick="deleteSchool(${i})">Delete</button></div>`).join('') : '<p class="small">No schools added yet.</p>';
+}
+function deleteSchool(i){const list=storage('schools'); list.splice(i,1); storage('schools',list); renderSchools();}
+
+function markWorkout(){
+  const key='workouts';
+  const done=storage(key);
+  const today=new Date().toISOString().slice(0,10);
+  if(!done.includes(today)) done.push(today);
+  storage(key,done);
+  renderWeek();
+}
+function renderWeek(){
+  const done=storage('workouts');
+  const now=new Date(), day=now.getDay();
+  const start=new Date(now); start.setDate(now.getDate()-day);
+  let count=0;
+  for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); if(done.includes(d.toISOString().slice(0,10))) count++; }
+  document.getElementById('weekBar').style.width = Math.min(100, count/5*100)+'%';
+  document.getElementById('weekText').textContent = `${count} completed day(s) this week. Target: 4–5 quality training/recovery days.`;
+}
+
+initDate(); renderToday(); renderSchedule(); renderExercises(); renderLogs(); renderSchools(); renderWeek();
+</script>
+</body>
+</html>
